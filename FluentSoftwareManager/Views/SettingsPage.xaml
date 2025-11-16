@@ -1,0 +1,59 @@
+<Page
+    x:Class="FluentSoftwareManager.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="24">
+        <StackPanel Spacing="24">
+            <!-- Header -->
+            <TextBlock Text="Settings"
+                      Style="{StaticResource TitleTextBlockStyle}"/>
+
+            <!-- Appearance -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Appearance"
+                          Style="{StaticResource SubtitleTextBlockStyle}"/>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Theme"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <RadioButtons x:Name="ThemeRadioButtons"
+                                 SelectionChanged="ThemeRadioButtons_SelectionChanged">
+                        <RadioButton Content="Light" Tag="Light"/>
+                        <RadioButton Content="Dark" Tag="Dark"/>
+                        <RadioButton Content="Use system setting" Tag="Default" IsChecked="True"/>
+                    </RadioButtons>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- About -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="About"
+                          Style="{StaticResource SubtitleTextBlockStyle}"/>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Fluent Software Manager"
+                              FontWeight="SemiBold"/>
+                    <TextBlock Text="Version 1.0.0"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="A modern Windows package manager with Fluent Design"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                              TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Winget Info -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Winget Integration"
+                          Style="{StaticResource SubtitleTextBlockStyle}"/>
+
+                <InfoBar IsOpen="True"
+                        Severity="Informational"
+                        Message="This application uses Windows Package Manager (winget) to install and manage packages. Make sure winget is installed and available in your system PATH."/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>
