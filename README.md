@@ -43,18 +43,42 @@
    cd FluentSoftwareManager
    ```
 
-2. 使用 Visual Studio 2022 打开解决方案
+2. **方式一：使用 PowerShell 脚本（推荐）**
+   ```powershell
+   # 构建项目
+   .\build.ps1
+
+   # 运行项目（需要管理员权限）
+   .\run.ps1
+
+   # 发布项目
+   .\publish.ps1
+   ```
+
+3. **方式二：使用 Visual Studio 2022**
    - 需要安装 "Windows 应用程序开发" 工作负载
-   - 需要安装 ".NET 桌面开发" 工作负载
+   - 以管理员身份运行 Visual Studio
+   - 打开 `FluentSoftwareManager.sln`
+   - 按 F5 开始调试
 
-3. 构建并运行
-   - 按 F5 或点击"启动"按钮
+4. **方式三：使用 dotnet CLI**
+   ```powershell
+   # 还原依赖
+   dotnet restore
 
-或使用命令行：
-```powershell
-dotnet build
-dotnet run --project FluentSoftwareManager/FluentSoftwareManager.csproj
-```
+   # 构建
+   dotnet build FluentSoftwareManager/FluentSoftwareManager.csproj -c Debug -p:Platform=x64
+
+   # 运行（需要管理员权限）
+   dotnet run --project FluentSoftwareManager/FluentSoftwareManager.csproj -c Debug -p:Platform=x64
+
+   # 发布
+   dotnet publish -c Release -r win-x64 -p:Platform=x64 -o ./publish
+   ```
+
+**注意**: 应用程序需要管理员权限来执行安装和卸载操作。
+
+📖 详细的构建和调试指南请查看 [BUILD.md](BUILD.md) 和 [QUICK_START.md](QUICK_START.md)
 
 ## 使用方法
 

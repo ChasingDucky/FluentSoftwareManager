@@ -29,7 +29,8 @@ bld/
 .vs/
 
 # Visual Studio Code
-.vscode/
+# Keep configuration files, ignore user-specific settings
+# .vscode/
 
 # ReSharper
 _ReSharper*/

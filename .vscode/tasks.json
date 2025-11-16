@@ -1,0 +1,90 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj",
+                "-c",
+                "Debug",
+                "-p:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build-release",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj",
+                "-c",
+                "Release",
+                "-p:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "clean",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "restore",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "restore",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj",
+                "-c",
+                "Release",
+                "-r",
+                "win-x64",
+                "-p:Platform=x64",
+                "-o",
+                "${workspaceFolder}/publish",
+                "--self-contained",
+                "true",
+                "-p:PublishSingleFile=true",
+                "-p:PublishReadyToRun=true"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "run",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/FluentSoftwareManager/FluentSoftwareManager.csproj",
+                "-c",
+                "Debug",
+                "-p:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
