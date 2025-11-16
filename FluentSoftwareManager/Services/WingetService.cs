@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using FluentSoftwareManager.Models;
+using Serilog;
 
 namespace FluentSoftwareManager.Services;
 
@@ -11,6 +12,7 @@ public class WingetService
 
     public async Task<List<Package>> SearchPackagesAsync(string query = "")
     {
+        Log.Debug("SearchPackagesAsync called with query: {Query}", query);
         var packages = new List<Package>();
 
         try
@@ -19,12 +21,15 @@ public class WingetService
                 ? "search --accept-source-agreements"
                 : $"search {query} --accept-source-agreements";
 
+            Log.Information("Executing winget search command: {Arguments}", arguments);
             var output = await ExecuteWingetCommandAsync(arguments);
             packages = ParseSearchOutput(output);
+            Log.Information("Found {Count} packages", packages.Count);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error searching packages: {ex.Message}");
+            Log.Error(ex, "Error searching packages with query: {Query}", query);
+            throw;
         }
 
         return packages;
@@ -32,16 +37,20 @@ public class WingetService
 
     public async Task<List<Package>> GetInstalledPackagesAsync()
     {
+        Log.Debug("GetInstalledPackagesAsync called");
         var packages = new List<Package>();
 
         try
         {
+            Log.Information("Executing winget list command");
             var output = await ExecuteWingetCommandAsync("list --accept-source-agreements");
             packages = ParseListOutput(output);
+            Log.Information("Found {Count} installed packages", packages.Count);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error getting installed packages: {ex.Message}");
+            Log.Error(ex, "Error getting installed packages");
+            throw;
         }
 
         return packages;
@@ -49,16 +58,20 @@ public class WingetService
 
     public async Task<List<Package>> GetUpgradeablePackagesAsync()
     {
+        Log.Debug("GetUpgradeablePackagesAsync called");
         var packages = new List<Package>();
 
         try
         {
+            Log.Information("Executing winget upgrade command");
             var output = await ExecuteWingetCommandAsync("upgrade --accept-source-agreements");
             packages = ParseUpgradeOutput(output);
+            Log.Information("Found {Count} upgradeable packages", packages.Count);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error getting upgradeable packages: {ex.Message}");
+            Log.Error(ex, "Error getting upgradeable packages");
+            throw;
         }
 
         return packages;
@@ -66,71 +79,86 @@ public class WingetService
 
     public async Task<Package?> GetPackageInfoAsync(string packageId)
     {
+        Log.Debug("GetPackageInfoAsync called for package: {PackageId}", packageId);
         try
         {
+            Log.Information("Getting package info for: {PackageId}", packageId);
             var output = await ExecuteWingetCommandAsync($"show {packageId} --accept-source-agreements");
-            return ParseShowOutput(output, packageId);
+            var package = ParseShowOutput(output, packageId);
+            Log.Information("Successfully retrieved package info for: {PackageId}", packageId);
+            return package;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error getting package info: {ex.Message}");
+            Log.Error(ex, "Error getting package info for: {PackageId}", packageId);
             return null;
         }
     }
 
     public async Task<bool> InstallPackageAsync(string packageId, IProgress<string>? progress = null)
     {
+        Log.Information("Installing package: {PackageId}", packageId);
         try
         {
             progress?.Report($"Installing {packageId}...");
             var output = await ExecuteWingetCommandAsync($"install {packageId} --accept-package-agreements --accept-source-agreements", progress);
             progress?.Report("Installation complete!");
+            Log.Information("Successfully installed package: {PackageId}", packageId);
             return true;
         }
         catch (Exception ex)
         {
-            progress?.Report($"Installation failed: {ex.Message}");
-            Debug.WriteLine($"Error installing package: {ex.Message}");
+            var errorMsg = $"Installation failed: {ex.Message}";
+            progress?.Report(errorMsg);
+            Log.Error(ex, "Error installing package: {PackageId}", packageId);
             return false;
         }
     }
 
     public async Task<bool> UninstallPackageAsync(string packageId, IProgress<string>? progress = null)
     {
+        Log.Information("Uninstalling package: {PackageId}", packageId);
         try
         {
             progress?.Report($"Uninstalling {packageId}...");
             var output = await ExecuteWingetCommandAsync($"uninstall {packageId} --accept-source-agreements", progress);
             progress?.Report("Uninstallation complete!");
+            Log.Information("Successfully uninstalled package: {PackageId}", packageId);
             return true;
         }
         catch (Exception ex)
         {
-            progress?.Report($"Uninstallation failed: {ex.Message}");
-            Debug.WriteLine($"Error uninstalling package: {ex.Message}");
+            var errorMsg = $"Uninstallation failed: {ex.Message}";
+            progress?.Report(errorMsg);
+            Log.Error(ex, "Error uninstalling package: {PackageId}", packageId);
             return false;
         }
     }
 
     public async Task<bool> UpgradePackageAsync(string packageId, IProgress<string>? progress = null)
     {
+        Log.Information("Upgrading package: {PackageId}", packageId);
         try
         {
             progress?.Report($"Upgrading {packageId}...");
             var output = await ExecuteWingetCommandAsync($"upgrade {packageId} --accept-package-agreements --accept-source-agreements", progress);
             progress?.Report("Upgrade complete!");
+            Log.Information("Successfully upgraded package: {PackageId}", packageId);
             return true;
         }
         catch (Exception ex)
         {
-            progress?.Report($"Upgrade failed: {ex.Message}");
-            Debug.WriteLine($"Error upgrading package: {ex.Message}");
+            var errorMsg = $"Upgrade failed: {ex.Message}";
+            progress?.Report(errorMsg);
+            Log.Error(ex, "Error upgrading package: {PackageId}", packageId);
             return false;
         }
     }
 
     private async Task<string> ExecuteWingetCommandAsync(string arguments, IProgress<string>? progress = null)
     {
+        Log.Debug("Executing winget command: {Command} {Arguments}", WingetPath, arguments);
+
         var process = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -154,6 +182,7 @@ public class WingetService
             {
                 output.AppendLine(e.Data);
                 progress?.Report(e.Data);
+                Log.Verbose("Winget output: {Line}", e.Data);
             }
         };
 
@@ -162,20 +191,33 @@ public class WingetService
             if (!string.IsNullOrEmpty(e.Data))
             {
                 error.AppendLine(e.Data);
+                Log.Warning("Winget error output: {Line}", e.Data);
             }
         };
 
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode != 0 && error.Length > 0)
+        try
         {
-            throw new Exception(error.ToString());
-        }
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            await process.WaitForExitAsync();
 
-        return output.ToString();
+            Log.Debug("Winget command completed with exit code: {ExitCode}", process.ExitCode);
+
+            if (process.ExitCode != 0)
+            {
+                var errorMessage = error.Length > 0 ? error.ToString() : "Unknown error";
+                Log.Error("Winget command failed with exit code {ExitCode}: {Error}", process.ExitCode, errorMessage);
+                throw new Exception($"Winget command failed (exit code {process.ExitCode}): {errorMessage}");
+            }
+
+            return output.ToString();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Exception executing winget command: {Command} {Arguments}", WingetPath, arguments);
+            throw;
+        }
     }
 
     private List<Package> ParseSearchOutput(string output)
