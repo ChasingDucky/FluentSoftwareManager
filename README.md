@@ -169,6 +169,162 @@ FluentSoftwareManager/
 
 本应用程序需要管理员权限以执行软件的安装和卸载操作。
 
+## 日志和错误处理
+
+### 日志位置
+
+应用程序会自动记录详细的日志信息，帮助诊断问题：
+
+```
+%LOCALAPPDATA%\FluentSoftwareManager\Logs\
+```
+
+完整路径示例：
+```
+C:\Users\YourName\AppData\Local\FluentSoftwareManager\Logs\app20241116.log
+```
+
+### 查看日志
+
+```powershell
+# 打开日志文件夹
+explorer %LOCALAPPDATA%\FluentSoftwareManager\Logs
+
+# 查看最新日志
+notepad %LOCALAPPDATA%\FluentSoftwareManager\Logs\app*.log
+
+# 实时监控日志
+Get-Content "$env:LOCALAPPDATA\FluentSoftwareManager\Logs\app*.log" -Wait -Tail 10
+```
+
+### 崩溃报告
+
+如果应用崩溃，会自动生成崩溃报告：
+```
+%LOCALAPPDATA%\FluentSoftwareManager\Logs\crash-<timestamp>.txt
+```
+
+详细信息请参阅 [LOGGING.md](LOGGING.md)
+
+## 故障排除
+
+### 问题 1：应用启动后黑屏或立即关闭
+
+**可能原因**：
+- Winget 未安装或不可用
+- 缺少 Windows App SDK 运行时
+- 缺少 .NET 8.0 Desktop Runtime
+
+**解决方案**：
+
+1. **检查日志文件**：
+   ```powershell
+   notepad %LOCALAPPDATA%\FluentSoftwareManager\Logs\app*.log
+   ```
+
+2. **安装必需组件**：
+   ```powershell
+   # 安装 winget（如果没有）
+   winget --version
+   # 如果失败，从 Microsoft Store 安装 "应用安装程序"
+
+   # 安装 Windows App SDK Runtime
+   winget install Microsoft.WindowsAppRuntime.1.5
+
+   # 安装 .NET Desktop Runtime
+   winget install Microsoft.DotNet.DesktopRuntime.8
+   ```
+
+3. **以管理员身份运行**：
+   - 右键点击应用 -> "以管理员身份运行"
+
+### 问题 2：PowerShell 脚本无法运行
+
+**错误信息**：
+```
+.\build.ps1 : The term '.\build.ps1' is not recognized...
+```
+
+**解决方案**：
+
+选择以下任一方式：
+
+**方式 1**：设置执行策略
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\build.ps1
+```
+
+**方式 2**：使用批处理脚本
+```batch
+build.bat
+run.bat
+```
+
+**方式 3**：直接使用 dotnet CLI
+```powershell
+dotnet build FluentSoftwareManager\FluentSoftwareManager.csproj -c Debug -p:Platform=x64
+dotnet run --project FluentSoftwareManager\FluentSoftwareManager.csproj -c Debug -p:Platform=x64
+```
+
+### 问题 3：找不到 dotnet 命令
+
+**解决方案**：
+```powershell
+# 安装 .NET 8.0 SDK
+winget install Microsoft.DotNet.SDK.8
+
+# 验证安装
+dotnet --version
+```
+
+### 问题 4：构建警告 NETSDK1206
+
+**警告信息**：
+```
+warning NETSDK1206: Found version-specific or distribution-specific runtime identifier(s)
+```
+
+**说明**：这是一个无害的警告，不影响程序运行。可以忽略或通过在项目文件中添加以下内容来消除：
+
+```xml
+<PropertyGroup>
+  <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+</PropertyGroup>
+```
+
+### 问题 5：需要管理员权限
+
+**错误信息**：
+```
+The requested operation requires elevation.
+```
+
+**解决方案**：
+
+- **方式 1**：以管理员身份运行 PowerShell/命令提示符
+- **方式 2**：右键点击已编译的 EXE -> "以管理员身份运行"
+
+### 获取诊断信息
+
+如果问题仍然存在，请收集以下信息：
+
+```powershell
+# 1. 查看日志
+Get-Content "$env:LOCALAPPDATA\FluentSoftwareManager\Logs\app*.log" -Tail 50
+
+# 2. 检查系统信息
+dotnet --info
+winget --version
+Get-WmiObject Win32_OperatingSystem | Select-Object Caption, Version
+
+# 3. 检查应用事件日志
+Get-EventLog -LogName Application -Newest 10 -EntryType Error |
+    Where-Object {$_.Source -like "*FluentSoftwareManager*" -or $_.Source -like "*.NET Runtime*"}
+```
+
+然后将信息提交到 GitHub Issues。
+
 ## 许可证
 
 MIT License
