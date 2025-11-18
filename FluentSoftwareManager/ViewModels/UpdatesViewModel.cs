@@ -234,6 +234,7 @@ public partial class UpdatesViewModel : ObservableObject
             if (detailedPackage != null)
             {
                 SelectedPackage = detailedPackage;
+                await PackageDetailsDialog.ShowAsync(detailedPackage);
                 StatusMessage = $"Details loaded for {package.Name}";
                 Log.Information("Package details loaded: {PackageId}", package.Id);
             }
@@ -241,6 +242,10 @@ public partial class UpdatesViewModel : ObservableObject
             {
                 StatusMessage = $"No details available for {package.Name}";
                 Log.Warning("No package details returned: {PackageId}", package.Id);
+                await ErrorDialog.ShowInfoAsync(
+                    "No Details",
+                    $"No detailed information is available for {package.Name}."
+                );
             }
         }
         catch (Exception ex)
