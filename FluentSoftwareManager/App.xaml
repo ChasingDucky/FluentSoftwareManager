@@ -12,6 +12,8 @@
             <!-- Converters -->
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+            <converters:EnumToIntConverter x:Key="EnumToIntConverter"/>
+            <converters:BoolToSortGlyphConverter x:Key="BoolToSortGlyphConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

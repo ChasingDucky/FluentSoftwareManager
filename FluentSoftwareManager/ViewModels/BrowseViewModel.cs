@@ -8,9 +8,24 @@ using Serilog;
 
 namespace FluentSoftwareManager.ViewModels;
 
+public enum PackageFilter
+{
+    All,
+    Installed,
+    NotInstalled
+}
+
+public enum PackageSortBy
+{
+    Name,
+    Publisher,
+    Version
+}
+
 public partial class BrowseViewModel : ObservableObject
 {
     private readonly WingetService _wingetService;
+    private List<Package> _allPackages = new();
 
     [ObservableProperty]
     private ObservableCollection<Package> _packages = new();
@@ -26,6 +41,47 @@ public partial class BrowseViewModel : ObservableObject
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
+
+    [ObservableProperty]
+    private PackageFilter _selectedFilter = PackageFilter.All;
+
+    [ObservableProperty]
+    private PackageSortBy _selectedSortBy = PackageSortBy.Name;
+
+    [ObservableProperty]
+    private bool _sortAscending = true;
+
+    public ObservableCollection<string> FilterOptions { get; } = new()
+    {
+        "All Packages",
+        "Installed Only",
+        "Not Installed"
+    };
+
+    public ObservableCollection<string> SortOptions { get; } = new()
+    {
+        "Name",
+        "Publisher",
+        "Version"
+    };
+
+    partial void OnSelectedFilterChanged(PackageFilter value)
+    {
+        Log.Information("Filter changed to: {Filter}", value);
+        ApplyFilterAndSort();
+    }
+
+    partial void OnSelectedSortByChanged(PackageSortBy value)
+    {
+        Log.Information("Sort changed to: {Sort}", value);
+        ApplyFilterAndSort();
+    }
+
+    partial void OnSortAscendingChanged(bool value)
+    {
+        Log.Information("Sort order changed to: {Order}", value ? "Ascending" : "Descending");
+        ApplyFilterAndSort();
+    }
 
     public BrowseViewModel()
     {
@@ -202,6 +258,74 @@ public partial class BrowseViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void ToggleSortOrder()
+    {
+        SortAscending = !SortAscending;
+    }
+
+    private void ApplyFilterAndSort()
+    {
+        try
+        {
+            Log.Debug("Applying filter: {Filter}, sort: {Sort}, order: {Order}",
+                SelectedFilter, SelectedSortBy, SortAscending ? "Asc" : "Desc");
+
+            // Start with all packages
+            var filtered = _allPackages.AsEnumerable();
+
+            // Apply filter
+            filtered = SelectedFilter switch
+            {
+                PackageFilter.Installed => filtered.Where(p => p.IsInstalled),
+                PackageFilter.NotInstalled => filtered.Where(p => !p.IsInstalled),
+                _ => filtered
+            };
+
+            // Apply sort
+            filtered = SelectedSortBy switch
+            {
+                PackageSortBy.Name => SortAscending
+                    ? filtered.OrderBy(p => p.Name)
+                    : filtered.OrderByDescending(p => p.Name),
+                PackageSortBy.Publisher => SortAscending
+                    ? filtered.OrderBy(p => p.Publisher)
+                    : filtered.OrderByDescending(p => p.Publisher),
+                PackageSortBy.Version => SortAscending
+                    ? filtered.OrderBy(p => p.Version)
+                    : filtered.OrderByDescending(p => p.Version),
+                _ => filtered
+            };
+
+            // Update the collection
+            Packages.Clear();
+            foreach (var package in filtered)
+            {
+                Packages.Add(package);
+            }
+
+            var totalCount = _allPackages.Count;
+            var filteredCount = Packages.Count;
+
+            if (filteredCount < totalCount)
+            {
+                StatusMessage = $"Showing {filteredCount} of {totalCount} package(s)";
+            }
+            else
+            {
+                StatusMessage = $"Showing {filteredCount} package(s)";
+            }
+
+            Log.Information("Filter and sort applied. Showing {Filtered} of {Total} packages",
+                filteredCount, totalCount);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error applying filter and sort");
+            StatusMessage = "Error applying filter/sort";
+        }
+    }
+
     private async Task LoadPackagesAsync(string query = "")
     {
         IsLoading = true;
@@ -213,17 +337,16 @@ public partial class BrowseViewModel : ObservableObject
 
             var packages = await _wingetService.SearchPackagesAsync(query);
 
+            _allPackages.Clear();
             Packages.Clear();
 
             if (packages != null && packages.Count > 0)
             {
-                foreach (var package in packages)
-                {
-                    Packages.Add(package);
-                }
+                _allPackages = packages.ToList();
+                Log.Information("Successfully loaded {Count} packages", _allPackages.Count);
 
-                StatusMessage = $"Found {packages.Count} package(s)";
-                Log.Information("Successfully loaded {Count} packages", packages.Count);
+                // Apply current filter and sort
+                ApplyFilterAndSort();
             }
             else
             {
